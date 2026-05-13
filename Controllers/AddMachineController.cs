@@ -3,17 +3,21 @@
 namespace Machine_Product_Service.Controllers;
 using Machine_Product_Service.MachineProduct;
 using Machine_Product_Service.DbContext;
+using Machine_Product_Service.DescriptionAiIntergratedService;
+using Machine_Product_Service.DTOS;
 [ApiController]
 [Route("[controller]")]
 public class AddMachineController : ControllerBase
 { 
     private readonly ILogger<AddMachineController> _logger;
     private readonly DBcontext  _context;
+    private readonly AiDescriptionService _aiDescriptionService;
 
-    public AddMachineController(ILogger<AddMachineController> logger, DBcontext dbcontext)
+    public AddMachineController(ILogger<AddMachineController> logger, DBcontext dbcontext, AiDescriptionService aiDescriptionService)
     {
         _logger = logger;
         _context = dbcontext;
+        _aiDescriptionService = aiDescriptionService;
     }
 
     [HttpPost("/AddMachine")]
@@ -38,19 +42,20 @@ public class AddMachineController : ControllerBase
             MachineYear = dto.Year,
             MachineGuid = uniqueNumber   // сохраняем int в БД
         };
-
+        var machineDto = new CreateMachineDto
+        {
+            Description =  dto.Description,
+            Brand = dto.Brand,
+            Model = dto.Model,
+            
+       };
+        await _aiDescriptionService.GenerateDescriptionAsync(machineDto);
         _context.Set<Machine>().Add(machine);
         await _context.SaveChangesAsync();
+        
         return Ok();
+        
+        
     }
     
-}
-public class CreateMachineDto
-{
-    public int MachineRun { get; set; }
-    public string Description { get; set; }
-    public string Brand { get; set; }
-    public string Model { get; set; }
-    public int Year { get; set; }
-    public IFormFile Image { get; set; }
 }
